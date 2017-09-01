@@ -1,5 +1,6 @@
 .App {
     text-align: center;
+    margin: 0 auto;
 }
 
 .App-logo {
@@ -13,6 +14,15 @@
 
 .App-intro {
     font-size: large;
+}
+
+.marker {
+    background-image: url('./prison.png');
+    background-size: cover;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
 }
 
 @keyframes App-logo-spin {
