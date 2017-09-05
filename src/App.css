@@ -25,6 +25,20 @@
     cursor: pointer;
 }
 
+.searchDrawer {
+    background-color: #303841;
+    text-align: left;
+    padding-left: 40px;
+}
+
+.selectInmate,
+.inmateOptions,
+.createVisit,
+.addAssociate,
+.cancelVisit {
+    display: none;
+}
+
 @keyframes App-logo-spin {
     from {
         transform: rotate(0deg);
