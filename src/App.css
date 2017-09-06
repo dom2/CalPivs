@@ -19,8 +19,8 @@
 .marker {
     background-image: url('./prison.png');
     background-size: cover;
-    width: 50px;
-    height: 50px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     cursor: pointer;
 }
@@ -47,12 +47,28 @@ h3 {
     z-index: 1000;
 }
 
-.selectInmate,
-.inmateOptions,
-.createVisit,
-.cancelVisit {}
+.selections {
+    transition: opacity .5s ease-out;
+    opacity: 0;
+}
+
+.visible {
+    transition: opacity .75s ease-in;
+    opacity: 1;
+}
+
+.prison_name {
+    position: absolute;
+    left: 250px;
+    bottom: 20px;
+    z-index: 1000;
+    font-size: 2rem;
+    color: #FEC009;
+    font-family: 'Share';
+}
 
 @import url('https://fonts.googleapis.com/css?family=Share+Tech+Mono');
+@import url('https://fonts.googleapis.com/css?family=Share');
 @keyframes App-logo-spin {
     from {
         transform: rotate(0deg);
