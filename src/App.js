@@ -8,6 +8,7 @@ import FlatButton from 'material-ui/FlatButton';
 import SelectField from 'material-ui/SelectField';
 import MenuItem from 'material-ui/MenuItem';
 import DatePicker from 'material-ui/DatePicker';
+import Dialog from 'material-ui/Dialog';
 import { Tabs, Tab } from 'material-ui/Tabs';
 import TimePicker from 'material-ui/TimePicker';
 import { Toolbar, ToolbarGroup, ToolbarSeparator, ToolbarTitle } from 'material-ui/Toolbar';
@@ -16,6 +17,7 @@ import ReactMapboxGl, { Layer, Feature, GeoJSONLayer, Marker, Popup } from "reac
 import darkBaseTheme from 'material-ui/styles/baseThemes/darkBaseTheme';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import getMuiTheme from 'material-ui/styles/getMuiTheme';
+import axios from 'axios';
 
 import './App.css';
 //import * as muiTheme from './NewTheme.js';
@@ -62,24 +64,28 @@ const muiTheme = getMuiTheme({
     },
 });
 
-const persons = [
-  {value: 0, name: 'Oliver Hansen'},
-  {value: 1, name: 'Van Henry'},
-  {value: 2, name: 'April Tucker'},
-  {value: 3, name: 'Ralph Hubbard'},
-  {value: 4, name: 'Omar Alexander'},
-  {value: 5, name: 'Carlos Abbott'},
-  {value: 6, name: 'Miriam Wagner'},
-  {value: 7, name: 'Bradley Wilkerson'},
-  {value: 8, name: 'Virginia Andrews'},
-  {value: 9, name: 'Kelly Snyder'},
-];
-
 
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { searchOpen: false, inmate: '', theMap: 'null', loginOpen: true, center: [-139.765,10.361392] };
+    this.state = {
+            searchOpen: false,
+            inmate: '',
+            theMap: 'null',
+            loginOpen: true,
+            associateID: null,
+            prisonID: null,
+            persons: [],
+            inmateID: null,
+            startTime: null,
+            endTime: null,
+            date: null,
+            center: [-139.765, 10.361392],
+            dOpen: false
+    };
+    this.handleDate = this.handleDate.bind(this);
+        this.handleStartTime = this.handleStartTime.bind(this);
+        this.handleEndTime = this.handleEndTime.bind(this);
   }
 
   markerClicked(prisonID, prison) {
@@ -87,29 +93,134 @@ class App extends Component {
     si[0].className = classNames({ selections: true, selectInmate: true, visible: false });
     si[1].className = classNames({ selections: true, createVisit: true, visible: false });
     si[2].className = classNames({selections: true, cancelVisit: true, visible:false});
+    this.setState({ prisonID: prisonID });
     this.setState({ center: [-113.718, 36.146] });
     this.setState({ searchOpen: true });
     var label = ReactDOM.findDOMNode(this).getElementsByClassName('prison_name')[0];
     label.innerHTML = prison;
-
-
   }
-  menuItems(persons) {
-    return persons.map((person) => (
-      <MenuItem
-        key={person.value}
-        insetChildren={true}
-        value={person.value}
-        primaryText={person.name}
-      />
-    ));
+   menuItems() {
+        return this.state.persons.map((person) => ( <
+            MenuItem key = { person.id }
+            insetChildren = { true }
+            onClick = {
+                () => {
+                    this.setState({ inmateID: person.id });
+                }
+            }
+            primaryText = { person.inmate_first_name + " " + person.inmate_last_name }
+            />
+        ));
   }
 
-  inmateSelected = (event, index, inmate) => this.setState({inmate});
+  menuItems() {
+        return this.state.persons.map((person) => ( <
+            MenuItem key = { person.id }
+            insetChildren = { true }
+            onClick = {
+                () => {
+                    this.setState({ inmateID: person.id });
+                }
+            }
+            primaryText = { person.inmate_first_name + " " + person.inmate_last_name }
+            />
+        ));
+    }
 
-  selectionRenderer = (inmate) => {
-    return persons[inmate].name;
-  }
+    associateLogin(data) {
+        var self = this;
+        axios.get(`http://129.158.67.147/api/associate?q={"filters":[{"name":"username","op":"==","val":"${data.username}"}, {"name":"password","op":"==","val":"${data.password}"}]}`)
+            .then(function(response) {
+              response.data.num_results > 0 ? self.setState({ associateID: response.data.objects[0].id, loginOpen: false }) : console.log("No results found");
+              self.setState({ loginOpen: false });
+              self.state.theMap.flyTo({ 'center': [-119.718, 36.146], 'zoom': [5.2] });
+                //console.log(response);
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
+    };
+
+    associateRegister(data) {
+        var self = this;
+        axios.post(`http://129.158.67.147/api/associate`, data)
+            .then(function(response) {
+              response.status == 201 ? self.setState({ associateID: response.data.id, loginOpen: false }) : console.log("No results found");
+              self.setState({ loginOpen: false });
+              self.state.theMap.flyTo({ 'center': [-119.718, 36.146], 'zoom': [5.2] });
+                //console.log(response);
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
+    };
+
+    searchInmateFullname(data) {
+        var self = this;
+
+        if (data.lname.length < 1) {
+            axios.get(`http://129.158.67.147/api/inmate?q={"filters":[{"name":"inmate_first_name","op":"==","val":"${data.fname}"},{"name":"prison_id","op":"==","val":"${this.state.prisonID}"}]}`)
+                .then(function(response) {
+                    response.data.num_results > 0 ? console.log(response) : console.log("No results found");
+                    self.setState({ persons: response.data.objects });
+                    self.menuItems();
+                    self.inmateSearched();
+                })
+                .catch(function(error) {
+                    console.log(error);
+                });
+        } else if (data.fname.length < 1) {
+            axios.get(`http://129.158.67.147/api/inmate?q={"filters":[{"name":"inmate_last_name","op":"==","val":"${data.lname}"},{"name":"prison_id","op":"==","val":"${this.state.prisonID}"}]}`)
+                .then(function(response) {
+                    response.data.num_results > 0 ? console.log(response) : console.log("No results found");
+                    self.setState({ persons: response.data.objects });
+                    self.menuItems();
+                    self.inmateSearched();
+                })
+                .catch(function(error) {
+                    console.log(error);
+                });
+        } else {
+            axios.get(`http://129.158.67.147/api/inmate?q={"filters":[{"name":"inmate_first_name","op":"==","val":"${data.fname}"},{"name":"inmate_last_name","op":"==","val":"${data.lname}"},{"name":"prison_id","op":"==","val":"${this.state.prisonID}"}]}`)
+                .then(function(response) {
+                    response.data.num_results > 0 ? console.log(response) : console.log("No results found");
+                    self.setState({ persons: response.data.objects });
+                    self.menuItems();
+                    self.inmateSearched();
+                })
+                .catch(function(error) {
+                    console.log(error);
+                });
+        }
+    };
+
+    handleStartTime(event, time) {
+        this.setState({ startTime: time });
+    };
+
+    handleEndTime(event, time) {
+        this.setState({ endTime: time });
+    };
+
+    handleDate(event, date) {
+        this.setState({ date: date });
+    };
+
+    createVisit(data) {
+        var self = this;
+        axios.post(`http://129.158.67.147/api/visit`, data)
+          .then(function (response) {
+            self.setState({ dOpen: true });
+            self.setState({ searchOpen: false });
+                //response.status == 201 ? self.setState({ associateID: response.data.id, loginOpen: false }) : console.log("No results found");
+                console.log(response);
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
+    };
+
+    inmateSelected = (event, index, inmate) => this.setState({ inmate });
 
   inmateSearched() {
     var si = ReactDOM.findDOMNode(this).getElementsByClassName('selections');
@@ -133,7 +244,14 @@ class App extends Component {
   }
 
   render() {
-
+    const dActions = [
+      <FlatButton
+        label="OK"
+        primary={true}
+        keyboardFocused={true}
+        onClick={() => { this.setState({ dOpen: false }) }}
+      />,
+    ];
     return (
       <MuiThemeProvider muiTheme={muiTheme}>
 
@@ -146,11 +264,13 @@ class App extends Component {
           <Tabs>
             <Tab label="Login" style={{ 'backgroundColor': "#FEC009" }}>
               <div className="login">
-                    <TextField
+                  <TextField
+                      ref="loginUsername"
                       hintText="Username"
                       underlineFocusStyle={styles.textFieldSelected}
                     /><br />
                     <TextField
+                      ref="loginPassword"
                       hintText="Password"
                       type="password"
                       underlineFocusStyle={styles.textFieldSelected}
@@ -160,21 +280,30 @@ class App extends Component {
                       hoverColor="#FEC009"
                       label="LOGIN"
                       fullWidth={true}
-                      onClick={() => { this.setState({ loginOpen: false }); this.state.theMap.flyTo({'center':[-119.718,36.146] , 'zoom':[5.2]});}}
+                      onClick={() => {
+                        var payload = { username: this.refs.loginUsername.getValue(),
+                          password: this.refs.loginPassword.getValue()
+                        };
+                        console.log(payload);
+                        this.associateLogin(payload);
+                      }}
                       />
               </div>
             </Tab>
             <Tab label="Register" style={{ 'backgroundColor': "#FEC009" }}>
               <div className="login">  
               <TextField
+                ref="registerFirstName"      
                 hintText="First Name"
                 underlineFocusStyle={styles.textFieldSelected}
               /><br />
               <TextField
+                ref="registerLastName"      
                 hintText="Last Name"
                 underlineFocusStyle={styles.textFieldSelected}
               /><br />
               <TextField
+                ref="registerAddress"      
                 hintText="Address"
                 multiLine={true}
                 rows={4}
@@ -182,10 +311,12 @@ class App extends Component {
                 underlineFocusStyle={styles.textFieldSelected}
               /><br />
               <TextField
+                ref="registerUserName"      
                 hintText="Username"
                 underlineFocusStyle={styles.textFieldSelected}
               /><br />  
               <TextField
+                ref="registerPassword"      
                 hintText="Password"
                 type="password"
                 underlineFocusStyle={styles.textFieldSelected}
@@ -195,7 +326,16 @@ class App extends Component {
                 hoverColor="#FEC009"
                 label="REGISTER"
                 fullWidth={true}
-                onClick={()=>{}}  
+                onClick={() => {
+                  var payload = {
+                    associate_firstname: this.refs.registerFirstName.getValue(),
+                    associate_lastname: this.refs.registerLastName.getValue(),
+                    associate_address: this.refs.registerAddress.getValue(),
+                    username: this.refs.registerUserName.getValue(),
+                    password: this.refs.registerPassword.getValue()
+                  };
+                  this.associateRegister(payload);
+                }}  
                   />
                 </div>  
             </Tab>
@@ -210,10 +350,12 @@ class App extends Component {
           </Toolbar>
             <div>
               <TextField
+                ref="inmateFirstName"  
                 hintText="First Name"
                 underlineFocusStyle={styles.textFieldSelected}
               /><br />
               <TextField
+                ref="inmateLastName"  
                 hintText="Last Name"
                 underlineFocusStyle={styles.textFieldSelected}
               /><br />
@@ -221,7 +363,13 @@ class App extends Component {
                 backgroundColor="#E7E4DF"
                 hoverColor="#FEC009"
                 label="SEARCH"
-                onClick={()=>{this.inmateSearched()}}  
+                onClick={() => {
+                  var payload = {
+                    fname: this.refs.inmateFirstName.getValue(),
+                    lname: this.refs.inmateLastName.getValue()
+                  };
+                  this.searchInmateFullname(payload);
+                }}  
 
               />
 
@@ -230,14 +378,14 @@ class App extends Component {
             <div className="selections selectInmate">
               <h3>Select inmate visiting</h3>
               <SelectField
-                hintText="Select an inmate"
+                hintText={this.state.inmateID ? "" : "Select an Inmate" }
                 value={this.state.inmate}
                 onChange={this.inmateSelected}
-                selectionRenderer={this.selectionRenderer}
+                //selectionRenderer={this.selectionRenderer}
               >
-                {this.menuItems(persons)}
+                {this.menuItems(this.state.persons)}
               </SelectField>
-                <FlatButton
+              <FlatButton
                 backgroundColor="#E7E4DF"
                 hoverColor="#FEC009"
                 label="CREATE VISIT"
@@ -254,21 +402,36 @@ class App extends Component {
             </div>
               <div className="selections createVisit">
                 <h3>Create a new visit</h3>
-                <DatePicker hintText="Visit Date" container="inline" mode="landscape" />
+                <DatePicker hintText="Visit Date" container="inline" mode="landscape" ref="visitDate" onChange={this.handleDate} />
                 <TimePicker
                   hintText="Start Time"
                   autoOk={true}
+                  ref="visitStartTime"
+                  onChange={this.handleStartTime}
                 />
                 <TimePicker
                   hintText="End Time"
                   autoOk={true}
+                  ref="visitEndTime"
+                  onChange={this.handleEndTime}
                 />
                 <br />
                 <FlatButton
                   backgroundColor="#E7E4DF"
                   hoverColor="#FEC009"
                   label="CREATE VISIT"
-                  fullWidth={true}  
+                  fullWidth={true}
+                  onClick={() => {
+                      var payload = {
+                        inmate_id: this.state.inmateID,
+                        associate_id: this.state.associateID,
+                        visit_date: this.state.date.toString(),
+                        visit_start_time: this.state.startTime.toString(),
+                        visit_end_time: this.state.endTime.toString(),
+                      };
+                      console.log(payload); 
+                      this.createVisit(payload);
+                   }}
                 />
               </div>
               <div className="selections cancelVisit">
@@ -277,9 +440,9 @@ class App extends Component {
                     hintText="Select an inmate"
                     value={this.state.inmate}
                     onChange={this.inmateSelected}
-                    selectionRenderer={this.selectionRenderer}
+                    //selectionRenderer={this.selectionRenderer}
                   >
-                    {this.menuItems(persons)}
+                    {this.menuItems(this.state.persons)}
                 </SelectField>
                 <FlatButton
                   backgroundColor="#E7E4DF"
@@ -349,6 +512,15 @@ class App extends Component {
 
               </Map>
           </span>
+          <Dialog
+            title="Visit Created"
+            actions={dActions}
+            modal={false}
+            open={this.state.dOpen}
+            onRequestClose={() => { this.setState({ dOpen: false }) }}
+          >
+            Congrats your visit has been created.
+          </Dialog>
           <img src={require('./logo.png')} id='logo' height='100px' width="223px" />
           <span className="prison_name"> </span>
           </div>  
