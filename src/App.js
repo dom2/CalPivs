@@ -10,18 +10,21 @@ import DatePicker from 'material-ui/DatePicker';
 import { Tabs, Tab } from 'material-ui/Tabs';
 import TimePicker from 'material-ui/TimePicker';
 import { Toolbar, ToolbarGroup, ToolbarSeparator, ToolbarTitle } from 'material-ui/Toolbar';
-import ReactMapboxGl, { Layer, Feature, GeoJSONLayer, Marker } from "react-mapbox-gl";
-
+import ReactMapboxGl, { Layer, Feature, GeoJSONLayer, Marker } from "react-mapbox-gl"; 
 
 import darkBaseTheme from 'material-ui/styles/baseThemes/darkBaseTheme';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import getMuiTheme from 'material-ui/styles/getMuiTheme';
 
-import logo from './logo.svg';
 import './App.css';
+//import * as muiTheme from './NewTheme.js';
 
 
 const accessToken = "pk.eyJ1IjoiZG9taWZ1bCIsImEiOiJjajZ3YWxwMnExYWtrMzhvM29tN2F6Mnl2In0.URW4KAAH60FcmQLe-0UWQg";
+const DBLUE = '#303841';
+const BLUE = '#16157A';
+const YELLOW = "#FEC009";
+const WHITE = "#E7E4DF";
 
 const Map = ReactMapboxGl({
   accessToken
@@ -32,6 +35,29 @@ const styles = {
     borderColor: "#FEC009",
   },
 };
+
+const muiTheme = getMuiTheme({
+    fontFamily: 'Share Tech Mono',
+    palette: {
+      textColor: WHITE,
+      canvasColor: DBLUE
+    },
+    textField: {
+      hintColor: WHITE,
+    },
+    flatButton: {
+        textColor: BLUE,
+    },
+    datePicker: {
+      selectColor: YELLOW,
+      selectTextColor: BLUE,
+      headerColor: YELLOW,
+    },
+    timePicker: {
+      selectTextColor: BLUE,
+      headerColor: YELLOW,
+    },
+});
 
 const persons = [
   {value: 0, name: 'Oliver Hansen'},
@@ -50,12 +76,12 @@ const persons = [
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { searchOpen: false, inmate: '', theMap: 'null', loginOpen: false };
+    this.state = { searchOpen: false, inmate: '', theMap: 'null', loginOpen: true, center: [-139.765,10.361392] };
   }
 
-  markerClicked(prisonID, prison){
-    this.setState({ searchOpen: !this.state.searchOpen });
-    this.state.theMap.easeTo({'center':[-119.718,36.146]});
+  markerClicked(prisonID, prison) {
+    this.setState({ center: [-113.718, 36.146] });
+    this.setState({ searchOpen: true });
   }
   menuItems(persons) {
     return persons.map((person) => (
@@ -77,182 +103,17 @@ class App extends Component {
   render() {
 
     return (
-      <MuiThemeProvider>
+      <MuiThemeProvider muiTheme={muiTheme}>
 
         <div className="App">
-          <Toolbar
-            style={{
-                backgroundColor: '#303841',
-              }}
-            >
-            <ToolbarTitle text="CalPIVS" />  
-          </Toolbar>
-          <Drawer className="searchDrawer" width="30%" openSecondary={true} >
-            <Toolbar
-            style={{
-                backgroundColor: '#FEC009',
-              }}
-            >
-              <ToolbarTitle text="Hello Visitor" />
-              
-          </Toolbar>
-          <Tabs>
-            <Tab label="Login" >
-              <div className="login">
-                    <TextField
-                      hintText="Username"
-                      underlineFocusStyle={styles.textFieldSelected}
-                    /><br />
-                    <TextField
-                      hintText="Password"
-                      type="password"
-                      underlineFocusStyle={styles.textFieldSelected}
-                    /><br />
-                    <FlatButton
-                      backgroundColor="#E7E4DF"
-                      hoverColor="#FEC009"
-                      label="LOGIN"
-                      fullWidth={true}
-                      onClick={() => {this.setState({ loginOpen: false })}}
-                      />
-              </div>
-            </Tab>
-            <Tab label="Register" >
-              <TextField
-                hintText="First Name"
-                underlineFocusStyle={styles.textFieldSelected}
-              /><br />
-              <TextField
-                hintText="Last Name"
-                underlineFocusStyle={styles.textFieldSelected}
-              /><br />
-              <TextField
-                hintText="Address"
-                multiLine={true}
-                rows={4}
-                rowsMax={4}  
-                underlineFocusStyle={styles.textFieldSelected}
-              /><br />
-              <TextField
-                hintText="Username"
-                underlineFocusStyle={styles.textFieldSelected}
-              /><br />  
-              <TextField
-                hintText="Password"
-                type="password"
-                underlineFocusStyle={styles.textFieldSelected}
-              /><br />
-              <FlatButton
-                backgroundColor="#E7E4DF"
-                hoverColor="#FEC009"
-                label="REGISTER"
-                fullWidth={true}
-                onClick={()=>{}}  
-                />
-            </Tab>
-          </Tabs>
-
-          </Drawer>
-          
-          <Drawer className="searchDrawer" width="40%" openSecondary={true} open={this.state.searchOpen} >
-            <Toolbar
-            style={{
-                backgroundColor: '#FEC009',
-              }}
-            >
-              <ToolbarTitle text="Search Inmate" />
-              <FlatButton label="Close" onClick={() => { this.setState({ searchOpen: false }); this.state.theMap.easeTo({'center':[-119.718,36.146]}); }}/>
-          </Toolbar>
-            <div>
-              <TextField
-                hintText="First Name"
-                underlineFocusStyle={styles.textFieldSelected}
-              /><br />
-              <TextField
-                hintText="Last Name"
-                underlineFocusStyle={styles.textFieldSelected}
-              /><br />
-              <FlatButton
-                backgroundColor="#E7E4DF"
-                hoverColor="#FEC009"
-                label="SEARCH"
-                onClick={()=>{}}  
-
-              />
-
-            </div>
-
-            <div className="selectInmate">
-              <SelectField
-                hintText="Select an inmate"
-                value={this.state.inmate}
-                onChange={this.inmateSelected}
-                selectionRenderer={this.selectionRenderer}
-              >
-                {this.menuItems(persons)}
-              </SelectField>
-              <div className="inmateOptions">
-                <FlatButton
-                backgroundColor="#E7E4DF"
-                hoverColor="#FEC009"
-                label="CREATE VISIT"
-                fullWidth={true}
-                onClick={()=>{}}
-                /><br /><br />
-              <FlatButton
-                backgroundColor="#E7E4DF"
-                hoverColor="red"
-                label="CANCEL VISIT"
-                fullWidth={true}
-                onClick={()=>{}}  
-              /><br /><br />
-              </div>
-              <div className="createVisit">
-                <DatePicker hintText="Visit Date" container="inline" mode="landscape" />
-                <TimePicker
-                  hintText="Start Time"
-                  autoOk={true}
-                />
-                <TimePicker
-                  hintText="End Time"
-                  autoOk={true}
-                />
-                <br />
-                <FlatButton
-                  backgroundColor="#E7E4DF"
-                  hoverColor="#FEC009"
-                  label="CREATE VISIT"
-                  fullWidth={true}  
-                />
-              </div>
-              <div className="cancelVisit">
-                  <SelectField
-                    hintText="Select an inmate"
-                    value={this.state.inmate}
-                    onChange={this.inmateSelected}
-                    selectionRenderer={this.selectionRenderer}
-                  >
-                    {this.menuItems(persons)}
-                </SelectField>
-                <FlatButton
-                  backgroundColor="#E7E4DF"
-                  hoverColor="red"
-                  label="CANCEL VISIT"
-                  fullWidth={true}  
-                />
-                
-              </div>
-
-            </div>
-          </Drawer>
           <span id="theMap">
             <Map
               style="mapbox://styles/domiful/cj6wampja8ygb2rqfrfsl8uwo"
-              center={[-120.108,37.333]}
-              zoom="1"
+              center={this.state.center}
+              zoom="5"
+              interactive={false}
               onStyleLoad={(map) => {
                 this.setState({ theMap: map });
-                this.state.theMap.flyTo({'center':[-119.718,36.146] , 'zoom':[5.2]});
               }}
               containerStyle={{
                 height: "100vh",
@@ -291,8 +152,164 @@ class App extends Component {
               />
               </Map>
           </span>
+          <Drawer width="25%" openSecondary={true} open={this.state.loginOpen} >
+            <Toolbar style={{ 'backgroundColor': "#FEC009" }}>
+              <ToolbarTitle text="Hello Visitor" />
+              
+            </Toolbar>
+          <Tabs>
+            <Tab label="Login" style={{ 'backgroundColor': "#FEC009" }}>
+              <div className="login">
+                    <TextField
+                      hintText="Username"
+                      underlineFocusStyle={styles.textFieldSelected}
+                    /><br />
+                    <TextField
+                      hintText="Password"
+                      type="password"
+                      underlineFocusStyle={styles.textFieldSelected}
+                    /><br />
+                    <FlatButton
+                      backgroundColor="#E7E4DF"
+                      hoverColor="#FEC009"
+                      label="LOGIN"
+                      fullWidth={true}
+                      onClick={() => { this.setState({ loginOpen: false }); this.state.theMap.flyTo({'center':[-119.718,36.146] , 'zoom':[5.2]});}}
+                      />
+              </div>
+            </Tab>
+            <Tab label="Register" style={{ 'backgroundColor': "#FEC009" }}>
+              <div className="login">  
+              <TextField
+                hintText="First Name"
+                underlineFocusStyle={styles.textFieldSelected}
+              /><br />
+              <TextField
+                hintText="Last Name"
+                underlineFocusStyle={styles.textFieldSelected}
+              /><br />
+              <TextField
+                hintText="Address"
+                multiLine={true}
+                rows={4}
+                rowsMax={4}  
+                underlineFocusStyle={styles.textFieldSelected}
+              /><br />
+              <TextField
+                hintText="Username"
+                underlineFocusStyle={styles.textFieldSelected}
+              /><br />  
+              <TextField
+                hintText="Password"
+                type="password"
+                underlineFocusStyle={styles.textFieldSelected}
+              /><br />
+              <FlatButton
+                backgroundColor="#E7E4DF"
+                hoverColor="#FEC009"
+                label="REGISTER"
+                fullWidth={true}
+                onClick={()=>{}}  
+                  />
+                </div>  
+            </Tab>
+          </Tabs>
+
+          </Drawer>
+          
+          <Drawer className="searchDrawer" width="25%" openSecondary={true} open={this.state.searchOpen} >
+            <Toolbar style={{ 'backgroundColor': "#FEC009" }}>
+              <ToolbarTitle text="Search Inmate" />
+              <FlatButton label="Close" onClick={() => { this.setState({ searchOpen: false }); this.state.theMap.easeTo({'center':[-119.718,36.146]}); }}/>
+          </Toolbar>
+            <div>
+              <TextField
+                hintText="First Name"
+                underlineFocusStyle={styles.textFieldSelected}
+              /><br />
+              <TextField
+                hintText="Last Name"
+                underlineFocusStyle={styles.textFieldSelected}
+              /><br />
+              <FlatButton
+                backgroundColor="#E7E4DF"
+                hoverColor="#FEC009"
+                label="SEARCH"
+                onClick={()=>{console.log(this.state.theMap.getCenter());}}  
+
+              />
+
+            </div>
+
+            <div className="selectInmate">
+              <h3>Select inmate visiting</h3>
+              <SelectField
+                hintText="Select an inmate"
+                value={this.state.inmate}
+                onChange={this.inmateSelected}
+                selectionRenderer={this.selectionRenderer}
+              >
+                {this.menuItems(persons)}
+              </SelectField>
+              <div className="inmateOptions">
+                <FlatButton
+                backgroundColor="#E7E4DF"
+                hoverColor="#FEC009"
+                label="CREATE VISIT"
+                fullWidth={true}
+                onClick={()=>{}}
+                /><br /><br />
+              <FlatButton
+                backgroundColor="#E7E4DF"
+                hoverColor="red"
+                label="CANCEL VISIT"
+                fullWidth={true}
+                onClick={()=>{}}  
+              /><br /><br />
+              </div>
+              <div className="createVisit">
+                <h3>Create a new visit</h3>
+                <DatePicker hintText="Visit Date" container="inline" mode="landscape" />
+                <TimePicker
+                  hintText="Start Time"
+                  autoOk={true}
+                />
+                <TimePicker
+                  hintText="End Time"
+                  autoOk={true}
+                />
+                <br />
+                <FlatButton
+                  backgroundColor="#E7E4DF"
+                  hoverColor="#FEC009"
+                  label="CREATE VISIT"
+                  fullWidth={true}  
+                />
+              </div>
+              <div className="cancelVisit">
+                  <h3>Choose visit to cancel</h3>
+                  <SelectField
+                    hintText="Select an inmate"
+                    value={this.state.inmate}
+                    onChange={this.inmateSelected}
+                    selectionRenderer={this.selectionRenderer}
+                  >
+                    {this.menuItems(persons)}
+                </SelectField>
+                <FlatButton
+                  backgroundColor="#E7E4DF"
+                  hoverColor="red"
+                  label="CANCEL VISIT"
+                  fullWidth={true}  
+                />
+                
+              </div>
+
+            </div>
+          </Drawer>
+          <img src={require('./logo.png')} id='logo' height='100px' width="223px"/>
+          </div>  
             
-  </div>
       </MuiThemeProvider>
     );
   }
